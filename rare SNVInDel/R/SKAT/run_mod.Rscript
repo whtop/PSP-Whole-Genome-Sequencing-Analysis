@@ -1,0 +1,56 @@
+## R script to run SKAT. 
+
+
+args=commandArgs(TRUE)
+
+chr = args[[1]] 
+bed_dir = args[[2]] 
+bed_head = args[[3]] 
+bed_tail = args[[4]] 
+dat_dir = args[[5]] 
+fam_name = args[[6]] 
+cov_name = args[[7]] 
+set_dir = args[[8]] 
+set_head = args[[9]] 
+set_tail = args[[10]] 
+output_dir = args[[11]] 
+output_head = args[[12]] 
+super = args[[13]]
+wtfile = args[[14]]
+
+
+print(args)
+
+.libPaths('/mnt/analysis-psp/users/timchang/programs/R/3.6.3/')
+library(SKAT)
+library(qvalue)
+
+File.Bed<-paste(bed_dir, bed_head, chr, bed_tail, ".bed",sep='') 
+File.Bim<-paste(bed_dir, bed_head, chr, bed_tail,".bim",sep='') 
+File.Fam<-paste(dat_dir, fam_name,sep='') 
+File.SetID<-paste(set_dir,set_head,super,set_tail,sep='') 
+File.SSD<-paste(set_dir,set_head,super,set_tail,".SSD",sep='') 
+File.Info<-paste(set_dir, set_head,super,set_tail,".SSD.info",sep='') 
+print(File.Bim)
+print(File.SetID)
+
+File.Cov<-paste(dat_dir,cov_name,sep='') #FID, IID, X1 and X2 where X_i are variables. 
+FAM<-Read_Plink_FAM_Cov(File.Fam, File.Cov, Is.binary=TRUE,cov_header=FALSE) #creates FID (actual sample name), IID, PID, MID, Sex, Phenotype, X1...Xmy 
+
+SSD.INFO<-Open_SSD(File.SSD, File.Info) #must close after open
+covvec=names(FAM)[which(names(FAM)=='COV1'):length(names(FAM))]
+nullformula=as.formula(paste('Phenotype ~ ',paste(covvec[-length(covvec)], '+',collapse=" "),covvec[length(covvec)]))
+print(nullformula)
+obj<-SKAT_Null_Model(nullformula, out_type="D",data=FAM, Adjustment=FALSE,type.Resampling='bootstrap.fast') #for ROSMAP
+File.Wt=paste0(wtfile) #change if only one weight file for each super
+obj.SNPWeight=Read_SNP_WeightFile(File.Wt)
+out<-SKATBinary.SSD.All(SSD.INFO, obj,obj.SNPWeight=obj.SNPWeight,method='SKATO') 
+
+print(out$results) 
+File.Out=paste(output_dir,output_head,'.',super,'.res',sep='')
+
+out$results$bhfdr=p.adjust(out$results$P.value,'fdr')
+write.table(out$results[,c('SetID', 'P.value','bhfdr','N.Marker.Test','MAC')],file=File.Out,quote=FALSE,sep='\t', row.names=FALSE, col.names=FALSE)
+
+Close_SSD()
+
