@@ -12,5 +12,14 @@ The analysis pipeline for Progressive Supranuclear Palsy (PSP) whole genome sequ
 ### SV calling
 Sample level SV calling using Manta and Smoove. Joint-genotyping with Graphtyper2
 
+### SV analysis
+SV association analysis. SVs in the H1/H2 region.
+
+### Common SNVInDel
+Common SNVs/INDELs analysis
+
+### Rare SNVInDel
+Rare SNVs/INDELs analysis
+
 ## License
 The implementation is available for academic and nonprofit use for free [LICENSE.md](LICENSE.md).
